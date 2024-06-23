@@ -23,42 +23,38 @@ int maxelement(int *a, int n)
     return max;
 }
 
-void countsort(int a[], int max, int n)
+void countsort(int *a, int n, int max)
 {
-    int i, j;
-    int *count = (int *)malloc((max + 1) * sizeof(int));
-    for (i = 0; i < max + 1; i++)
+    int count[max+1];
+    int b[n], i;
+    for (i = 0; i <= max; i++)
     {
         count[i] = 0;
     }
     for (i = 0; i < n; i++)
     {
-        count[a[i]] = count[a[i]] + 1;
+        ++count[a[i]];
     }
-    i = 0;
-    j = 0;
-    while (j <= max)
+    for (i = 1; i <= max; i++)
     {
-        if (count[j] > 0)
-        {
-            while (count[j] != 0)
-            {
-                a[i] = j;
-                count[j] = count[j] - 1;
-                i++;
-            }
-        }
-        j++;
+        count[i] += count[i - 1];
     }
-    free(count);
+    for (i = n - 1; i >= 0; i--)
+    {
+        b[--count[a[i]]] = a[i];
+    }
+    for (i = 0; i < n; i++)
+    {
+        a[i] = b[i];
+    }
 }
 
 void main()
 {
-    int A[] = {12, 54, 65, 7, 23, 9, 9, 9, 9};
+    int A[] = {1, 5, 6, 7, 2, 9};
     int n = (sizeof(A)) / sizeof(int);
     int max = maxelement(A, n);
     printArray(A, n); // Printing the array before sorting
-    countsort(A, max, n);
+    countsort(A, n, max);
     printArray(A, n); // Printing the array before sorting
 }
