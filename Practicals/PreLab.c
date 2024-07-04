@@ -122,6 +122,7 @@ void updatestock(struct store *item) {
     int found = 0;
 
 
+    
     file = fopen("Items.txt", "r");
     tempfile = fopen("TempItems.txt", "w");
 
@@ -154,7 +155,6 @@ void updatestock(struct store *item) {
     }
 
     fclose(file);
-    fclose(tempfile);
 
     if (found) {
         remove("Items.txt");
