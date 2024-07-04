@@ -8,9 +8,10 @@ struct store
     char pcode[10];
     char cat[10];
     char price[8];
+    char stock[100];
 };
 
-struct store *itemadd(struct store *item, int *stock)
+struct store *itemadd(struct store *item)
 {
 
     FILE *file;
@@ -30,12 +31,13 @@ struct store *itemadd(struct store *item, int *stock)
     scanf("%s", &item->price);
     printf("Category\n");
     scanf("%s", &item->cat);
+    printf("Quantity\n");
+    scanf("%s", &item->stock);
 
     fseek(file, 0, SEEK_CUR);
 
-    fprintf(file, "%s %s %s %s\n", item->pname, item->pcode, item->price, item->cat);
+    fprintf(file, "%s %s %s %s %s\n", item->pname, item->pcode, item->price, item->cat,item->stock);
 
-    *stock += 1;
     printf("Item added successfully\n");
     item++;
     fclose(file);
@@ -60,7 +62,7 @@ void itemsearch(struct store *item)
     scanf("%s", code);
 
     printf("Fetching Data................\n");
-    while (fscanf(file, "%s %s %s %s\n", item->pname, item->pcode, item->price, item->cat) != EOF)
+    while (fscanf(file, "%s %s %s %s %s\n", item->pname, item->pcode, item->price, item->cat,item->stock) != EOF)
     {
         if (strcmp(item->pcode, code) == 0)
         {
@@ -70,7 +72,8 @@ void itemsearch(struct store *item)
             printf("Code: %s\n", item->pcode);
             printf("Name: %s\n", item->pname);
             printf("Category: %s\n", item->cat);
-            printf("Price: %s\n\n", item->price);
+            printf("Price: %s\n", item->price);
+            printf("Stocks Quantity %s\n\n", item->stock);
 
             found = 1;
             break;
@@ -96,71 +99,71 @@ void displayitem(struct store *item)
 
     char code[20];
 
-    printf("Enter Category\n");
-    scanf("%s", code);
 
     printf("Fetching Data................\n");
-    while (fscanf(file, "%s %s %s %s\n", item->pname, item->pcode, item->price, item->cat) != EOF)
+    while (fscanf(file, "%s %s %s %s %s\n", item->pname, item->pcode, item->price, item->cat,item->stock) != EOF)
     {
-        if (strcmp(item->cat, code) == 0)
-        {
-
             printf("\nItem's Detail\n");
             printf("Code: %s\n", item->pcode);
             printf("Name: %s\n", item->pname);
             printf("Category: %s\n", item->cat);
-            printf("Price: %s\n\n", item->price);
-        }
+            printf("Price: %s\n", item->price);
+            printf("Stocks Quantity %s\n\n", item->stock);
+
     }
 
     fclose(file);
 }
 
-void updatestock(struct store *item, int *stock)
-{
-    FILE *file;
-    FILE *tempfile;
-    int found = 0;
+void updatestock(struct store *item) {
+    FILE *file, *tempfile;
     char code[20];
+    char cho[20];
+    int found = 0;
 
-    printf("Enter Item ID or pcode to delete\n");
-    scanf("%s", code);
 
     file = fopen("Items.txt", "r");
-    tempfile = fopen("temp.txt", "w");
-    if (file == NULL || tempfile == NULL)
-    {
+    tempfile = fopen("TempItems.txt", "w");
+
+    if (file == NULL||tempfile == NULL) {
         printf("Error opening file!\n");
-        return;
-    }
+    }else{
+
+    printf("Enter Item ID or pcode\n");
+    scanf("%s", code);
+    
+    printf("Enter New quantity\n");
+    scanf("%s", cho);
 
     printf("Fetching Data................\n");
-    while (fscanf(file, "%s %s %s %s\n", item->pname, item->pcode, item->price, item->cat) != EOF)
-    {
-        if (strcmp(item->pcode, code) == 0)
-        {
+
+    // Read each line from the original file
+    while (fscanf(file, "%s %s %s %s %s\n", item->pname, item->pcode, item->price, item->cat, item->stock) != EOF) {
+        if (strcmp(item->pcode, code) == 0) {
+
+            strcpy(item->stock, cho);
+
+            printf("Invenotry Updated\n");
+            printf("Name: %s\n", item->pname);
+            printf("Stocks Quantity: %s\n", item->stock);
             found = 1;
-            (*stock)--;
         }
-        else
-        {
-            fprintf(tempfile, "%s %s %s %s\n", item->pname, item->pcode, item->price, item->cat);
-        }
+        // Write the (possibly updated) item to the temporary file
+        fprintf(tempfile, "%s %s %s %s %s\n", item->pname, item->pcode, item->price, item->cat, item->stock);
     }
+    }
+
     fclose(file);
     fclose(tempfile);
 
-    remove("Items.txt");
-    rename("temp.txt", "Items.txt");
-
-    if (found)
-    {
-        printf("Item deleted successfully\n");
-    }
-    else
-    {
+    if (found) {
+        remove("Items.txt");
+        rename("TempItems.txt", "Items.txt");
+    } else {
         printf("Item with code %s not found\n", code);
+        remove("TempItems.txt");
     }
+
 }
 
 void main()
@@ -169,10 +172,11 @@ void main()
     struct store *item, *start;
     item = (struct store *)malloc(sizeof(struct store));
     int stock = 0;
+    start=item;
     printf("-------------------------Store management-------------------------------\n\n");
     printf("\t\t1)Add items to inventory\n"
-           "\t\t2)Search item\n"
-           "\t\t3)Display items with category\n"
+           "\t\t2)Search items\n"
+           "\t\t3)Display items\n"
            "\t\t4)Update the inventory\n"
            "\t\t5)exit\n");
     int ch;
@@ -186,16 +190,16 @@ void main()
         switch (ch)
         {
         case 1:
-            item = itemadd(item, &stock);
+            item = itemadd(item);
             break;
         case 2:
             itemsearch(item);
             break;
         case 3:
-            displayitem(item);
+            displayitem(start);
             break;
         case 4:
-            updatestock(item, &stock);
+            updatestock(item);
             break;
         case 5:
             ans = 'n';

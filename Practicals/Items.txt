@@ -1,1 +1,2 @@
-cooler 102 3000 Cooler
+AlphaSeriesMonitor 201 3000 Monitor 2
+LogistechMouse 202 2000 Mouse 7
