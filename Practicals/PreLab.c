@@ -155,6 +155,7 @@ void updatestock(struct store *item) {
     }
 
     fclose(file);
+    fclose(tempfile);
 
     if (found) {
         remove("Items.txt");
