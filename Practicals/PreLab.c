@@ -122,7 +122,6 @@ void updatestock(struct store *item) {
     int found = 0;
 
 
-    
     file = fopen("Items.txt", "r");
     tempfile = fopen("TempItems.txt", "w");
 
@@ -167,7 +166,7 @@ void updatestock(struct store *item) {
 
 }
 
-void main()
+int main()
 {
 
     struct store *item, *start;
@@ -182,7 +181,6 @@ void main()
            "\t\t5)exit\n");
     int ch;
     char ans = 'y';
-    char e;
     while (ans == 'y')
     {
         printf("Enter Choice ");
@@ -194,13 +192,13 @@ void main()
             item = itemadd(item);
             break;
         case 2:
-            itemsearch(item);
+            itemsearch(start);
             break;
         case 3:
             displayitem(start);
             break;
         case 4:
-            updatestock(item);
+            updatestock(start);
             break;
         case 5:
             ans = 'n';
@@ -211,4 +209,6 @@ void main()
     }
     printf("Exting Program\n");
     printf("---------------------------------------------------------------------------");
+    
+    return 0;
 }
