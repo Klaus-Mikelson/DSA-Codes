@@ -7,7 +7,7 @@ void main(){
     int size=(sizeof(arr))/(sizeof(int));
     int element=4;
     int index=binary(arr,size,element);
-    printf("Element found at %d index\n",index);
+    (index!=-1)?printf("Element found at %d index\n",index):printf("Element not found.\n");
 
 }
 
