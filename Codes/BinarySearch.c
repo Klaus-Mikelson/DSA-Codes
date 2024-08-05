@@ -3,10 +3,17 @@
 int binary(int [],int,int);
 
 void main(){
-    int arr[]={1,23,36,42,56,78};
-    int size=(sizeof(arr))/(sizeof(int));
-    int element=4;
-    int index=binary(arr,size,element);
+    int i,n,key;
+    printf("Enter the no of elements ");
+    scanf("%d",&n);
+    int arr[n];
+    printf("Enter elements\n");
+    for(i=0;i<n;i++){
+        scanf("%d",&arr[i]);
+    }
+    printf("Element to search ");
+    scanf("%d",&key);
+    int index=binary(arr,n,key);
     (index!=-1)?printf("Element found at %d index\n",index):printf("Element not found.\n");
 
 }
