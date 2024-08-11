@@ -6,13 +6,11 @@
 #define USER_FILE "admin.txt"
 #define EVENT_FILE "events.txt"
 
-
 typedef struct Admin
 {
     char username[50];
     char password[50];
 } admin;
-
 
 typedef struct User
 {
@@ -22,7 +20,6 @@ typedef struct User
     struct User *next;
 } user;
 
-
 typedef struct Event
 {
     int id;
@@ -30,11 +27,12 @@ typedef struct Event
     char date[20];
     char time[10];
     char location[100];
+    char category[50];
+    char description[500];
     char status[20];
     struct Event *next;
     user *attendees;
 } event;
-
 
 typedef struct HashNode
 {
@@ -43,13 +41,11 @@ typedef struct HashNode
     struct HashNode *next;
 } HashNode;
 
-
 typedef struct HashMap
 {
     int size;
     HashNode **table;
 } HashMap;
-
 
 void registerUser();
 int loginUser();
@@ -58,6 +54,7 @@ unsigned int hashFunction(int, int);
 
 void createEvent(HashMap *eventMap, int *eventIdCounter);
 void viewEvents(HashMap *eventMap);
+void filterEventsByCategory(HashMap *eventMap);
 void registerForEvent(HashMap *eventMap, HashMap *userMap);
 void viewAttendees(HashMap *eventMap);
 
@@ -71,6 +68,7 @@ void changeEventStatus(HashMap* eventMap);
 void saveEventsToFile(HashMap *eventMap);
 void loadEventsFromFile(HashMap *eventMap, int *eventIdCounter);
 
+void readLine(char *buffer, int size);
 
 int main()
 {
@@ -90,6 +88,7 @@ int main()
         printf("\t\t\t3. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        getchar(); // Consume newline character
 
         if (choice == 1)
         {
@@ -122,12 +121,14 @@ int main()
         printf("\n\nMain Menu\n");
         printf("1. Create Event\n");
         printf("2. View Events\n");
-        printf("3. Register for Event\n");
-        printf("4. View Attendees\n");
-        printf("5. Change Event Status\n");
-        printf("6. Exit\n");
+        printf("3. Filter Events by Category\n");
+        printf("4. Register for Event\n");
+        printf("5. View Attendees\n");
+        printf("6. Change Event Status\n");
+        printf("7. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
+        getchar(); // Consume newline character
 
         switch (choice)
         {
@@ -138,16 +139,19 @@ int main()
             viewEvents(eventMap);
             break;
         case 3:
-            registerForEvent(eventMap, userMap);
+            filterEventsByCategory(eventMap);
             break;
         case 4:
-            viewAttendees(eventMap);
+            registerForEvent(eventMap, userMap);
             break;
         case 5:
+            viewAttendees(eventMap);
+            break;
+        case 6:
             changeEventStatus(eventMap);
             saveEventsToFile(eventMap);
             break;
-        case 6:
+        case 7:
             saveEventsToFile(eventMap);
             return 0;
             break;
@@ -157,14 +161,13 @@ int main()
     }
 }
 
-
 void registerUser()
 {
     admin ad;
     FILE *file;
 
     printf("Enter admin name: ");
-    scanf("%s", ad.username);
+    readLine(ad.username, sizeof(ad.username));
 
     if (checkUserExists(ad.username))
     {
@@ -173,7 +176,7 @@ void registerUser()
     }
 
     printf("Enter password: ");
-    scanf("%s", ad.password);
+    readLine(ad.password, sizeof(ad.password));
 
     file = fopen(USER_FILE, "a");
 
@@ -191,9 +194,9 @@ int loginUser()
     int found = 0;
 
     printf("Enter name: ");
-    scanf("%s", username);
+    readLine(username, sizeof(username));
     printf("Enter password: ");
-    scanf("%s", password);
+    readLine(password, sizeof(password));
 
     file = fopen(USER_FILE, "r");
     if (file == NULL)
@@ -246,7 +249,7 @@ unsigned int hashFunction(int id, int size)
 
 HashMap *createHashMap(int size)
 {
-	int i;
+    int i;
     HashMap *hashMap = (HashMap *)malloc(sizeof(HashMap));
     hashMap->size = size;
     hashMap->table = (HashNode **)malloc(size * sizeof(HashNode *));
@@ -312,13 +315,17 @@ void createEvent(HashMap *eventMap, int *eventIdCounter)
     event *newEvent = (event *)malloc(sizeof(event));
     newEvent->id = (*eventIdCounter)++;
     printf("Enter event name: ");
-    scanf("%s", newEvent->name);
+    readLine(newEvent->name, sizeof(newEvent->name));
     printf("Enter event date (YYYY-MM-DD): ");
-    scanf("%s", newEvent->date);
+    readLine(newEvent->date, sizeof(newEvent->date));
     printf("Enter event time (HH:MM): ");
-    scanf("%s", newEvent->time);
+    readLine(newEvent->time, sizeof(newEvent->time));
     printf("Enter event location: ");
-    scanf("%s", newEvent->location);
+    readLine(newEvent->location, sizeof(newEvent->location));
+    printf("Enter event category: ");
+    readLine(newEvent->category, sizeof(newEvent->category));
+    printf("Enter event description: ");
+    readLine(newEvent->description, sizeof(newEvent->description));
     strcpy(newEvent->status, "scheduled");
     newEvent->attendees = NULL;
 
@@ -328,7 +335,7 @@ void createEvent(HashMap *eventMap, int *eventIdCounter)
 
 void viewEvents(HashMap *eventMap)
 {
-	int i;
+    int i, eventFound = 0;
     printf("Events:\n");
     for (i = 0; i < eventMap->size; i++)
     {
@@ -337,6 +344,7 @@ void viewEvents(HashMap *eventMap)
         {
             if (current->event)
             {
+                eventFound = 1;
                 int attendeeCount = 0;
                 user *attendee = current->event->attendees;
                 while (attendee != NULL)
@@ -345,20 +353,110 @@ void viewEvents(HashMap *eventMap)
                     attendee = attendee->next;
                 }
 
-                printf("Event ID: %d, Name: %s, Date: %s, Time: %s, Location: %s, Status: %s, Attendees: %d\n",
+                printf("ID: %d, Name: %s, Date: %s, Time: %s, Location: %s, Category: %s, Description: %s, Status: %s, Attendees: %d\n",
                        current->event->id, current->event->name, current->event->date, current->event->time,
-                       current->event->location, current->event->status, attendeeCount);
+                       current->event->location, current->event->category, current->event->description, current->event->status, attendeeCount);
             }
             current = current->next;
         }
     }
+    if (!eventFound)
+    {
+        printf("Currently, no events are available.\n");
+    }
+}
+
+void filterEventsByCategory(HashMap *eventMap)
+{
+    int i, eventFound = 0;
+    char category[50];
+    printf("Enter event category to filter: ");
+    readLine(category, sizeof(category));
+
+    printf("Events in category '%s':\n", category);
+    for (i = 0; i < eventMap->size; i++)
+    {
+        HashNode *current = eventMap->table[i];
+        while (current != NULL)
+        {
+            if (current->event && strcmp(current->event->category, category) == 0)
+            {
+                eventFound = 1;
+                int attendeeCount = 0;
+                user *attendee = current->event->attendees;
+                while (attendee != NULL)
+                {
+                    attendeeCount++;
+                    attendee = attendee->next;
+                }
+
+                printf("ID: %d, Name: %s, Date: %s, Time: %s, Location: %s, Category: %s, Description: %s, Status: %s, Attendees: %d\n",
+                       current->event->id, current->event->name, current->event->date, current->event->time,
+                       current->event->location, current->event->category, current->event->description, current->event->status, attendeeCount);
+            }
+            current = current->next;
+        }
+    }
+    if (!eventFound)
+    {
+        printf("No events found in category '%s'.\n", category);
+    }
+}
+
+void registerForEvent(HashMap *eventMap, HashMap *userMap)
+{
+    int eventId, userId;
+    event *evt;
+    user *usr;
+
+    printf("Enter event ID to register: ");
+    scanf("%d", &eventId);
+    getchar(); // Consume newline character
+    evt = searchEvent(eventMap, eventId);
+    if (evt == NULL)
+    {
+        printf("Event not found!\n");
+        return;
+    }
+
+    printf("Enter user ID: ");
+    scanf("%d", &userId);
+    getchar(); // Consume newline character
+    usr = searchUser(userMap, userId);
+    if (usr == NULL)
+    {
+        usr = (user *)malloc(sizeof(user));
+        usr->id = userId;
+        printf("Enter user name: ");
+        readLine(usr->name, sizeof(usr->name));
+        printf("Enter contact number: ");
+        readLine(usr->contactNo, sizeof(usr->contactNo));
+        usr->next = NULL;
+        insertUser(userMap, usr);
+    }
+
+    user *current = evt->attendees;
+    while (current != NULL)
+    {
+        if (current->id == userId)
+        {
+            printf("User already registered for this event!\n");
+            return;
+        }
+        current = current->next;
+    }
+
+    usr->next = evt->attendees;
+    evt->attendees = usr;
+    printf("User registered for event successfully!\n");
 }
 
 void viewAttendees(HashMap *eventMap)
 {
     int eventId;
-    printf("Enter event ID: ");
+    printf("Enter event ID to view attendees: ");
     scanf("%d", &eventId);
+    getchar(); // Consume newline character
 
     event *evt = searchEvent(eventMap, eventId);
     if (evt == NULL)
@@ -367,8 +465,14 @@ void viewAttendees(HashMap *eventMap)
         return;
     }
 
-    printf("Attendees for Event ID %d:\n", eventId);
+    if (evt->attendees == NULL)
+    {
+        printf("No attendees registered for event ID %d.\n", eventId);
+        return;
+    }
+
     user *attendee = evt->attendees;
+    printf("Attendees for event ID %d:\n", eventId);
     while (attendee != NULL)
     {
         printf("User ID: %d, Name: %s, Contact No: %s\n", attendee->id, attendee->name, attendee->contactNo);
@@ -376,63 +480,34 @@ void viewAttendees(HashMap *eventMap)
     }
 }
 
-void registerForEvent(HashMap *eventMap, HashMap *userMap)
-{
-    int eventId, userId;
-    user *usr = (user *)malloc(sizeof(user));
-
-    printf("Enter event ID: ");
-    scanf("%d", &eventId);
-    event *evt = searchEvent(eventMap, eventId);
-
-    if (evt == NULL)
-    {
-        printf("Event not found!\n");
-        free(usr);
-        return;
-    }
-
-    printf("Enter user ID: ");
-    scanf("%d", &userId);
-    printf("Enter user name: ");
-    scanf("%s", usr->name);
-    printf("Enter contact number: ");
-    scanf("%s", usr->contactNo);
-
-    usr->id = userId;
-    usr->next = evt->attendees;
-    evt->attendees = usr;
-
-    insertUser(userMap, usr);
-    printf("User registered for the event successfully!\n");
-}
-
 void changeEventStatus(HashMap *eventMap)
 {
     int eventId;
-    char status[20];
-
     printf("Enter event ID to change status: ");
     scanf("%d", &eventId);
-    event *evt = searchEvent(eventMap, eventId);
+    getchar(); // Consume newline character
 
+    event *evt = searchEvent(eventMap, eventId);
     if (evt == NULL)
     {
         printf("Event not found!\n");
         return;
     }
 
-    printf("Enter new status (scheduled/live/cancelled/finished): ");
-    scanf("%s", status);
-    strcpy(evt->status, status);
-
+    printf("Enter new status for event ID %d (scheduled, live, cancelled, finished): ", eventId);
+    readLine(evt->status, sizeof(evt->status));
     printf("Event status updated successfully!\n");
 }
 
 void saveEventsToFile(HashMap *eventMap)
 {
     FILE *file = fopen(EVENT_FILE, "w");
-    int i;
+    if (file == NULL)
+    {
+        printf("Error opening file for saving events!\n");
+        return;
+    }
+int i;
     for (i = 0; i < eventMap->size; i++)
     {
         HashNode *current = eventMap->table[i];
@@ -441,13 +516,21 @@ void saveEventsToFile(HashMap *eventMap)
             if (current->event)
             {
                 event *evt = current->event;
-                fprintf(file, "%d %s %s %s %s %s\n", evt->id, evt->name, evt->date, evt->time, evt->location, evt->status);
+                fprintf(file, "%d,%s,%s,%s,%s,%s,%s,%s\n", evt->id, evt->name, evt->date, evt->time, evt->location, evt->category, evt->description, evt->status);
+                user *attendee = evt->attendees;
+                while (attendee != NULL)
+                {
+                    fprintf(file, "%d,%s,%s\n", attendee->id, attendee->name, attendee->contactNo);
+                    attendee = attendee->next;
+                }
+                fprintf(file, "END_EVENT\n");
             }
             current = current->next;
         }
     }
 
     fclose(file);
+    printf("Events saved to file successfully!\n");
 }
 
 void loadEventsFromFile(HashMap *eventMap, int *eventIdCounter)
@@ -458,17 +541,58 @@ void loadEventsFromFile(HashMap *eventMap, int *eventIdCounter)
         return;
     }
 
-    while (!feof(file))
+    event *currentEvent = NULL;
+    user *lastAttendee = NULL;
+
+    char line[1000];
+    while (fgets(line, sizeof(line), file))
     {
-        event *evt = (event *)malloc(sizeof(event));
-        fscanf(file, "%d %s %s %s %s %s", &evt->id, evt->name, evt->date, evt->time, evt->location, evt->status);
-        evt->attendees = NULL;
-        insertEvent(eventMap, evt);
-        if (evt->id >= *eventIdCounter)
+        if (strncmp(line, "END_EVENT", 9) == 0)
         {
-            *eventIdCounter = evt->id + 1;
+            currentEvent = NULL;
+            lastAttendee = NULL;
+        }
+        else if (currentEvent == NULL)
+        {
+            currentEvent = (event *)malloc(sizeof(event));
+            sscanf(line, "%d,%[^,],%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", &currentEvent->id, currentEvent->name, currentEvent->date, currentEvent->time,
+                   currentEvent->location, currentEvent->category, currentEvent->description, currentEvent->status);
+            currentEvent->attendees = NULL;
+            insertEvent(eventMap, currentEvent);
+            if (currentEvent->id >= *eventIdCounter)
+            {
+                *eventIdCounter = currentEvent->id + 1;
+            }
+        }
+        else
+        {
+            user *newAttendee = (user *)malloc(sizeof(user));
+            sscanf(line, "%d,%[^,],%s", &newAttendee->id, newAttendee->name, newAttendee->contactNo);
+            newAttendee->next = NULL;
+            if (currentEvent->attendees == NULL)
+            {
+                currentEvent->attendees = newAttendee;
+            }
+            else
+            {
+                lastAttendee->next = newAttendee;
+            }
+            lastAttendee = newAttendee;
         }
     }
 
     fclose(file);
 }
+
+void readLine(char *buffer, int size)
+{
+    if (fgets(buffer, size, stdin) != NULL)
+    {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n')
+        {
+            buffer[len - 1] = '\0';
+        }
+    }
+}
+
