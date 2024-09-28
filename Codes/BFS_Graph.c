@@ -1,91 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-struct node
-{
-    int data;
-    struct node *next;
-};
+#define MAX 100
 
-struct node *createnode(int val)
-{
-    struct node *root = (struct node *)malloc(sizeof(struct node));
-    root->data = val;
-    root->next = NULL;
-    return root;
-}
+// BFS from given source s
+void bfs(int adj[MAX][MAX], int V, int s) {
+  
+    // Create a queue for BFS
+    int q[MAX], front = 0, rear = 0;    
 
-void addedge(struct node *adjlist[], int vertex, int nvertex)
-{
-    struct node *newNode = createnode(nvertex);
-
-    // Insert the new node in the correct position to maintain ascending order
-    if (adjlist[vertex] == NULL || adjlist[vertex]->data > nvertex)
-    {
-        newNode->next = adjlist[vertex];
-        adjlist[vertex] = newNode;
-    }
-    else
-    {
-        struct node *current = adjlist[vertex];
-        while (current->next != NULL && current->next->data < nvertex)
-        {
-            current = current->next;
-        }
-        newNode->next = current->next;
-        current->next = newNode;
-    }
-}
-
-void bfs(struct node *adjlist[], int vertex, int vertices, int *visited)
-{
-    int queue[100];
-    int front = -1, rear = -1;
-
-    visited[vertex] = 1;
-    queue[++rear] = vertex;
-
-    while (front != rear)
-    {
-        int current = queue[++front];
-        printf("%d ", current);
-
-        struct node *tmp = adjlist[current];
-        while (tmp != NULL)
-        {
-            int vnode = tmp->data;
-            if (!visited[vnode])
-            {
-                visited[vnode] = 1;
-                queue[++rear] = vnode;
+    // Initially mark all the vertices as not visited
+    // When we push a vertex into the q, we mark it as 
+    // visited
+    bool visited[MAX] = { false };
+    
+    // Mark the source node as visited and enqueue it
+    visited[s] = true;
+    q[rear++] = s;
+    
+    // Iterate over the queue
+    while (front < rear) {
+      
+        // Dequeue a vertex and print it
+        int curr = q[front++];
+        printf("%d ", curr);
+        
+        // Get all adjacent vertices of the dequeued vertex
+        // If an adjacent has not been visited, mark it visited and enqueue it
+        for (int i = 0; i < V; i++) {
+            if (adj[curr][i] == 1 && !visited[i]) {
+                visited[i] = true;
+                q[rear++] = i;
             }
-            tmp = tmp->next;
         }
     }
 }
-int main()
-{
-    int vertex = 5;
-    int visited[vertex];
-    for (int i = 0; i < vertex; i++)
-    {
-        visited[i] = 0;
-    }
 
-    struct node *adjlist[vertex];
-    for (int i = 0; i < vertex; i++)
-    {
-        adjlist[i] = NULL;
-    }
+// Function to add an edge to the graph
+void addEdge(int adj[MAX][MAX], int u, int v) {
+    adj[u][v] = 1;
+    adj[v][u] = 1;  // Undirected graph
+}
 
-    addedge(adjlist, 0, 1);
-    addedge(adjlist, 0, 2);
-    addedge(adjlist, 1, 3);
-    addedge(adjlist, 1, 4);
-    addedge(adjlist, 2, 4);
-
-    printf("BFS Traversal of graph from 0 vertex: ");
-    bfs(adjlist, 0, vertex, visited);
-
+int main() {
+    // Number of vertices in the graph
+    int V = 5;
+    
+    // Adjacency matrix representation of the graph
+    int adj[MAX][MAX] = {0};
+    
+    // Add edges to the graph
+    addEdge(adj, 0, 1);
+    addEdge(adj, 0, 2);
+    addEdge(adj, 1, 3);
+    addEdge(adj, 1, 4);
+    addEdge(adj, 2, 4);
+    
+    // Perform BFS traversal starting from vertex 0
+    printf("BFS starting from 0:\n");
+    bfs(adj, V, 0);
+    
     return 0;
 }
